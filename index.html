@@ -1,97 +1,386 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Twemoji 全一覧</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twemoji Dictionary</title>
 
 <style>
-body {
-    font-family: sans-serif;
-    margin: 20px;
+body{
+    margin:0;
+    font-family:sans-serif;
+    background:#f5f5f5;
 }
 
-h1 {
-    margin-bottom: 20px;
+header{
+    position:sticky;
+    top:0;
+    background:#fff;
+    padding:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+    z-index:10;
 }
 
-#emoji-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-    gap: 10px;
+.controls{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
 }
 
-.emoji {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 8px;
-    text-align: center;
+input,select{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
 }
 
-.emoji img {
-    width: 48px;
-    height: 48px;
-    display: block;
-    margin: 0 auto 6px;
+#search{
+    flex:1;
 }
 
-.code {
-    font-size: 10px;
-    color: #666;
-    word-break: break-all;
+#count{
+    margin-top:10px;
+    color:#666;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:12px;
+    padding:15px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:12px;
+    text-align:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+
+.card img{
+    width:64px;
+    height:64px;
+}
+
+.name{
+    font-weight:bold;
+    margin-top:8px;
+}
+
+.meta{
+    font-size:12px;
+    color:#666;
+}
+
+.buttons{
+    margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+}
+
+button{
+    padding:6px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
 }
 </style>
 </head>
 <body>
 
-<h1>Twemoji 全一覧</h1>
+<header>
 
-<div id="emoji-list">読み込み中...</div>
+<h2>😀 Twemoji Dictionary</h2>
+
+<div class="controls">
+
+<input
+id="search"
+placeholder="Search emoji..."
+>
+
+<select id="group">
+<option value="">All Categories</option>
+</select>
+
+<select id="subgroup">
+<option value="">All Sub Categories</option>
+</select>
+
+</div>
+
+<div id="count">
+Loading...
+</div>
+
+</header>
+
+<div id="grid" class="grid"></div>
 
 <script>
-const container = document.getElementById("emoji-list");
 
-fetch("https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/")
-.then(() => {})
-.catch(() => {});
+const DATA_URL =
+"https://unicode.org/Public/emoji/latest/emoji-test.txt";
 
-// GitHub APIからファイル一覧取得
-fetch("https://api.github.com/repos/twitter/twemoji/contents/assets/72x72")
-.then(res => res.json())
-.then(files => {
+const TWEMOJI =
+"https://cdn.jsdelivr.net/gh/twitter/twemoji/assets/svg/";
 
-    container.innerHTML = "";
+const grid =
+document.getElementById("grid");
 
-    files.forEach(file => {
+const searchInput =
+document.getElementById("search");
 
-        if (!file.name.endsWith(".png")) return;
+const groupSelect =
+document.getElementById("group");
 
-        const code = file.name.replace(".png", "");
+const subgroupSelect =
+document.getElementById("subgroup");
 
-        const div = document.createElement("div");
-        div.className = "emoji";
+const count =
+document.getElementById("count");
 
-        const img = document.createElement("img");
-        img.src = file.download_url;
+let emojis=[];
 
-        const label = document.createElement("div");
-        label.className = "code";
-        label.textContent = code;
+fetch(DATA_URL)
+.then(r=>r.text())
+.then(parseEmojiData);
 
-        div.appendChild(img);
-        div.appendChild(label);
+function parseEmojiData(text){
 
-        container.appendChild(div);
-    });
+let group="";
+let subgroup="";
 
-    document.title =
-        `Twemoji 全一覧 (${container.children.length}件)`;
-})
-.catch(err => {
-    container.innerHTML =
-        "取得に失敗しました。GitHub APIの制限に達している可能性があります。";
-    console.error(err);
+text.split("\n").forEach(line=>{
+
+if(line.startsWith("# group:")){
+group=line.replace("# group:","").trim();
+return;
+}
+
+if(line.startsWith("# subgroup:")){
+subgroup=line.replace("# subgroup:","").trim();
+return;
+}
+
+if(
+!line.includes("; fully-qualified")
+) return;
+
+const parts=line.split("#");
+
+if(parts.length<2) return;
+
+const code=
+parts[0]
+.split(";")[0]
+.trim()
+.toLowerCase()
+.replaceAll(" ","-");
+
+const emojiInfo=
+parts[1].trim();
+
+const emoji=
+emojiInfo.split(" ")[0];
+
+const name=
+emojiInfo
+.substring(emoji.length)
+.trim();
+
+emojis.push({
+emoji,
+name,
+code,
+group,
+subgroup
 });
+
+});
+
+populateFilters();
+render();
+
+}
+
+function populateFilters(){
+
+const groups=
+[...new Set(
+emojis.map(e=>e.group)
+)];
+
+groups.forEach(g=>{
+const o=document.createElement("option");
+o.value=g;
+o.textContent=g;
+groupSelect.appendChild(o);
+});
+
+groupSelect.addEventListener(
+"change",
+()=>{
+updateSubgroups();
+render();
+}
+);
+
+updateSubgroups();
+
+}
+
+function updateSubgroups(){
+
+subgroupSelect.innerHTML=
+'<option value="">All Sub Categories</option>';
+
+const current=
+groupSelect.value;
+
+const subgroups=
+[...new Set(
+emojis
+.filter(e=>
+!current ||
+e.group===current
+)
+.map(e=>e.subgroup)
+)];
+
+subgroups.forEach(s=>{
+const o=document.createElement("option");
+o.value=s;
+o.textContent=s;
+subgroupSelect.appendChild(o);
+});
+
+}
+
+searchInput.addEventListener(
+"input",
+render
+);
+
+subgroupSelect.addEventListener(
+"change",
+render
+);
+
+function render(){
+
+const search=
+searchInput.value.toLowerCase();
+
+const group=
+groupSelect.value;
+
+const subgroup=
+subgroupSelect.value;
+
+const filtered=
+emojis.filter(e=>{
+
+return (
+(!group || e.group===group)
+&&
+(!subgroup || e.subgroup===subgroup)
+&&
+(
+e.name.toLowerCase().includes(search)
+||
+e.code.includes(search)
+||
+e.emoji.includes(search)
+)
+);
+
+});
+
+count.textContent=
+`${filtered.length} emojis`;
+
+grid.innerHTML="";
+
+filtered.forEach(e=>{
+
+const svg=
+TWEMOJI + e.code + ".svg";
+
+const card=
+document.createElement("div");
+
+card.className="card";
+
+card.innerHTML=`
+
+<img loading="lazy" src="${svg}">
+
+<div class="name">
+${e.name}
+</div>
+
+<div>
+${e.emoji}
+</div>
+
+<div class="meta">
+${e.group}
+</div>
+
+<div class="meta">
+${e.subgroup}
+</div>
+
+<div class="buttons">
+
+<button onclick="
+navigator.clipboard.writeText('${e.emoji}')
+">
+Copy Emoji
+</button>
+
+<button onclick="
+navigator.clipboard.writeText('${e.code}')
+">
+Copy Code
+</button>
+
+<button onclick="
+downloadSvg('${svg}','${e.code}')
+">
+Download SVG
+</button>
+
+</div>
+`;
+
+grid.appendChild(card);
+
+});
+
+}
+
+function downloadSvg(url,name){
+
+const a=
+document.createElement("a");
+
+a.href=url;
+a.download=name+".svg";
+
+document.body.appendChild(a);
+
+a.click();
+
+a.remove();
+
+}
+
 </script>
 
 </body>
 </html>
+```
