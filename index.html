@@ -1,72 +1,77 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Blog</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background-color: #f5f5f5;
-    }
-    header {
-      background-color: #333;
-      color: white;
-      padding: 20px;
-      text-align: center;
-    }
-    .container {
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 0 15px;
-    }
-    .post {
-      background: white;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .post h2 {
-      margin-top: 0;
-    }
-    .date {
-      color: gray;
-      font-size: 0.9em;
-    }
-    footer {
-      text-align: center;
-      padding: 15px;
-      background: #333;
-      color: white;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Twemoji 一覧</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js"></script>
+
+<style>
+body {
+    font-family: sans-serif;
+    margin: 20px;
+}
+
+#emoji-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+}
+
+.emoji {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+}
+
+.emoji img {
+    width: 36px;
+    height: 36px;
+}
+
+.code {
+    font-size: 10px;
+    color: #666;
+    word-break: break-all;
+}
+</style>
 </head>
 <body>
 
-<header>
-  <h1>My Blog</h1>
-  <p>日常や考えを書いていくブログ</p>
-</header>
+<h1>Twemoji 一覧</h1>
 
-<div class="container">
-  <div class="post">
-    <h2>はじめての投稿</h2>
-    <p class="date">2026/04/27</p>
-    <p>これは最初のブログ記事です。ここに自由に文章を書いていきます。</p>
-  </div>
+<div id="emoji-list"></div>
 
-  <div class="post">
-    <h2>2つ目の記事</h2>
-    <p class="date">2026/04/26</p>
-    <p>ブログっぽく、記事をどんどん追加できます。</p>
-  </div>
-</div>
+<script>
+const emojis = [
+    "😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊",
+    "😍","🥰","😘","😎","🤔","😴","😭","😡","👍","👎",
+    "👏","🙏","💪","❤️","🔥","✨","⭐","🌈","☀️","🌙",
+    "🐶","🐱","🐼","🦄","🍎","🍕","🍔","🍣","⚽","🏀",
+    "🚗","🚀","✈️","🎉","🎵","📚","💻","📱","🎮","🧩"
+];
 
-<footer>
-  <p>© 2026 My Blog</p>
-</footer>
+const container = document.getElementById("emoji-list");
+
+emojis.forEach(emoji => {
+    const div = document.createElement("div");
+    div.className = "emoji";
+    div.textContent = emoji;
+
+    twemoji.parse(div, {
+        folder: "svg",
+        ext: ".svg"
+    });
+
+    const code = document.createElement("div");
+    code.className = "code";
+    code.textContent = emoji.codePointAt(0).toString(16);
+
+    div.appendChild(code);
+    container.appendChild(div);
+});
+</script>
 
 </body>
 </html>
